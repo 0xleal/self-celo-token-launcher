@@ -41,9 +41,10 @@ export function MilestoneCard({ milestone, isCreator, onBet, onUpdateStatus }: M
 
   const handleBet = (prediction: boolean) => {
     if (!betAmount || Number(betAmount) <= 0) return;
+    setSelectedSide(prediction);
     onBet?.(milestone.id, prediction, betAmount);
     setBetAmount("");
-    setSelectedSide(null);
+    setTimeout(() => setSelectedSide(null), 2000); // Clear selection after 2s
   };
 
   const getStatusIcon = () => {
@@ -109,97 +110,104 @@ export function MilestoneCard({ milestone, isCreator, onBet, onUpdateStatus }: M
         <div className="space-y-4 border-t border-border pt-4">
           <div className="text-sm font-medium">Prediction Market</div>
 
-          {/* Market Overview */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* YES Side */}
-            <div
-              className={`rounded-lg border-2 p-4 transition-all ${
-                selectedSide === true
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <div className="mb-2 flex items-center justify-between">
+          {/* Tug-of-War Chart */}
+          <div className="rounded-lg border border-border bg-muted/30 p-6">
+            {/* Top Labels: Percentages and Odds */}
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-left">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                  <span className="font-semibold">YES</span>
+                  <TrendingDown className="h-4 w-4 text-destructive" />
+                  <span className="font-semibold text-destructive">NO</span>
                 </div>
-                <span className="text-sm font-mono">{yesOdds}x</span>
+                <div className="mt-1 font-mono text-lg font-bold">
+                  {noPercentage.toFixed(0)}%
+                </div>
+                <div className="text-xs text-muted-foreground">{noOdds}x odds</div>
               </div>
-              <div className="mb-2 h-2 rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${yesPercentage}%` }}
-                />
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {yesPercentage.toFixed(0)}% - {totalYes.toFixed(2)} CELO
+
+              <div className="text-right">
+                <div className="flex items-center justify-end gap-2">
+                  <span className="font-semibold text-primary">YES</span>
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                </div>
+                <div className="mt-1 font-mono text-lg font-bold">
+                  {yesPercentage.toFixed(0)}%
+                </div>
+                <div className="text-xs text-muted-foreground">{yesOdds}x odds</div>
               </div>
             </div>
 
-            {/* NO Side */}
-            <div
-              className={`rounded-lg border-2 p-4 transition-all ${
-                selectedSide === false
-                  ? "border-destructive bg-destructive/5"
-                  : "border-border hover:border-destructive/50"
-              }`}
-            >
-              <div className="mb-2 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4 text-destructive" />
-                  <span className="font-semibold">NO</span>
-                </div>
-                <span className="text-sm font-mono">{noOdds}x</span>
-              </div>
-              <div className="mb-2 h-2 rounded-full bg-muted">
+            {/* Horizontal Bar with Marker */}
+            <div className="relative mb-3">
+              {/* Background gradient bar */}
+              <div className="h-8 rounded-full bg-gradient-to-r from-destructive/20 via-muted to-primary/20">
+                {/* Marker indicating current position */}
                 <div
-                  className="h-full rounded-full bg-destructive transition-all"
-                  style={{ width: `${noPercentage}%` }}
-                />
+                  className="absolute top-0 flex h-8 items-center transition-all duration-300"
+                  style={{ left: `${yesPercentage}%` }}
+                >
+                  <div className="relative -ml-4 flex h-10 w-10 items-center justify-center">
+                    <div className="absolute h-10 w-10 animate-ping rounded-full bg-primary/30 opacity-75"></div>
+                    <div className="relative h-8 w-8 rounded-full border-4 border-background bg-primary shadow-lg"></div>
+                  </div>
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground">
-                {noPercentage.toFixed(0)}% - {totalNo.toFixed(2)} CELO
-              </div>
+
+              {/* Center line (50/50) */}
+              <div className="absolute left-1/2 top-0 h-8 w-0.5 -translate-x-1/2 bg-border opacity-50"></div>
+            </div>
+
+            {/* Bottom Labels: Stake Amounts */}
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div>{totalNo.toFixed(1)} CELO staked</div>
+              <div>{totalYes.toFixed(1)} CELO staked</div>
             </div>
           </div>
 
           {/* Bet Placement */}
           <div className="space-y-3">
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                placeholder="Bet amount (CELO)"
-                value={betAmount}
-                onChange={(e) => setBetAmount(e.target.value)}
-                min="0"
-                step="0.1"
-              />
-            </div>
+            <Input
+              type="number"
+              placeholder="Bet amount (CELO)"
+              value={betAmount}
+              onChange={(e) => setBetAmount(e.target.value)}
+              min="0"
+              step="0.1"
+            />
             <div className="grid grid-cols-2 gap-2">
-              <Button
-                onClick={() => handleBet(true)}
-                disabled={!betAmount || Number(betAmount) <= 0}
-                className="bg-primary hover:bg-primary/90"
-              >
-                Bet YES
-              </Button>
               <Button
                 onClick={() => handleBet(false)}
                 disabled={!betAmount || Number(betAmount) <= 0}
                 variant="destructive"
+                size="lg"
               >
+                <TrendingDown className="mr-2 h-4 w-4" />
                 Bet NO
+              </Button>
+              <Button
+                onClick={() => handleBet(true)}
+                disabled={!betAmount || Number(betAmount) <= 0}
+                className="bg-primary hover:bg-primary/90"
+                size="lg"
+              >
+                <TrendingUp className="mr-2 h-4 w-4" />
+                Bet YES
               </Button>
             </div>
             {betAmount && Number(betAmount) > 0 && (
-              <p className="text-xs text-muted-foreground text-center">
-                Potential return:{" "}
-                {selectedSide === true
-                  ? (Number(betAmount) * Number(yesOdds)).toFixed(2)
-                  : (Number(betAmount) * Number(noOdds)).toFixed(2)}{" "}
-                CELO
-              </p>
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <p className="text-sm font-medium">
+                  Potential return:{" "}
+                  <span className="font-mono text-base font-bold text-primary">
+                    {selectedSide === true
+                      ? (Number(betAmount) * Number(yesOdds)).toFixed(2)
+                      : selectedSide === false
+                      ? (Number(betAmount) * Number(noOdds)).toFixed(2)
+                      : "Select YES or NO"}
+                  </span>{" "}
+                  CELO
+                </p>
+              </div>
             )}
           </div>
         </div>
